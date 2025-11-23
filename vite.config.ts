@@ -12,10 +12,9 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
     },
     define: {
-      // Polyfill process.env to prevent "process is not defined" crash in browser
-      'process.env': {},
-      // Inject the API Key specifically
-      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+      // We do NOT use process.env here to avoid browser crashes.
+      // We inject the key into a custom global variable.
+      '__GEMINI_KEY__': JSON.stringify(env.API_KEY)
     }
   }
 })
