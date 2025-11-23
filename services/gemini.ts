@@ -3,7 +3,7 @@ import { LegalResponse, GroundingSource, MakeupRecommendation } from "../types";
 
 // Declare the global variable injected by Vite
 declare const __GEMINI_KEY__: string | undefined;
-__GEMINI_KEY__ = AIzaSyBLp8XKHD40wpWvpEfbMce15UF_yqU-ZTQ;
+__GEMINI_KEY__ = "AIzaSyBLp8XKHD40wpWvpEfbMce15UF_yqU-ZTQ";
 // --- LAZY INITIALIZATION ---
 // We do not initialize the client at the top level to prevent crashes 
 // if the API key is missing during initial load.
