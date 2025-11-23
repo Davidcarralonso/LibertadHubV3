@@ -1,0 +1,7 @@
+{
+  "name": "Libertad's Hub",
+  "description": "A personal super-app for Libertad featuring a Wishlist, Legal Consulting Tool, and Beauty section.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
