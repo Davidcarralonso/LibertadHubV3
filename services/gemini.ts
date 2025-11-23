@@ -1,11 +1,27 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { LegalResponse, GroundingSource, MakeupRecommendation } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// --- LAZY INITIALIZATION ---
+// We do not initialize the client at the top level to prevent crashes 
+// if the API key is missing during initial load.
+let aiInstance: GoogleGenAI | null = null;
+
+const getAI = () => {
+  if (!aiInstance) {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      console.warn("API Key is missing! AI features will fail.");
+    }
+    // Fallback to empty string to allow app to load, errors will occur on usage not startup
+    aiInstance = new GoogleGenAI({ apiKey: apiKey || '' });
+  }
+  return aiInstance;
+};
 
 // --- WISHLIST SERVICE ---
 export const getWishlistSuggestions = async (categoryLabel: string): Promise<string[]> => {
   try {
+    const ai = getAI();
     const model = 'gemini-2.5-flash';
     
     const response = await ai.models.generateContent({
@@ -44,6 +60,7 @@ export const getWishlistSuggestions = async (categoryLabel: string): Promise<str
 // --- LEGAL CONSULTING SERVICE (HIGH RIGOR) ---
 export const getLegalConsultation = async (query: string): Promise<LegalResponse> => {
   try {
+    const ai = getAI();
     // Using gemini-3-pro-preview for maximum reasoning capability for complex tasks like Law.
     const model = 'gemini-3-pro-preview';
 
@@ -100,6 +117,7 @@ export const getLegalConsultation = async (query: string): Promise<LegalResponse
 // --- MAKEUP COLOR MATCH SERVICE ---
 export const getMakeupRecommendations = async (hexColor: string): Promise<MakeupRecommendation[]> => {
   try {
+    const ai = getAI();
     const model = 'gemini-2.5-flash';
     
     const response = await ai.models.generateContent({
@@ -146,6 +164,7 @@ export const analyzeMakeupImage = async (base64Image: string): Promise<{
   paoMonths: number;
 }> => {
   try {
+    const ai = getAI();
     const model = 'gemini-2.5-flash';
     
     // Remove data URL prefix if present to get pure base64
