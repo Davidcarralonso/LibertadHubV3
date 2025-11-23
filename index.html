@@ -3,9 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Libertad's Wishes</title>
+    <title>Libertad's Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Global Error Handler for Debugging Deployment -->
+    <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        const root = document.getElementById('root');
+        if (root && root.innerHTML.trim() === "") {
+          const errorBox = document.createElement('div');
+          errorBox.style.padding = "20px";
+          errorBox.style.color = "red";
+          errorBox.style.fontFamily = "monospace";
+          errorBox.style.backgroundColor = "#fee";
+          errorBox.innerHTML = `<h3>💥 Application Crash</h3><p>${message}</p><p>Source: ${source}:${lineno}</p>`;
+          document.body.appendChild(errorBox);
+        }
+      };
+    </script>
+
     <script>
       tailwind.config = {
         theme: {
@@ -30,16 +47,13 @@
       }
     </script>
     <style>
-      /* Utility to hide scrollbars but allow scrolling */
       .scrollbar-hide {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
       }
       .scrollbar-hide::-webkit-scrollbar {
-        display: none; /* Chrome, Safari and Opera */
+        display: none;
       }
-      
-      /* Animations */
       @keyframes fadeIn {
         from { opacity: 0; }
         to { opacity: 1; }
@@ -54,23 +68,22 @@
       .animate-slideUp {
         animation: slideUp 0.5s ease-out;
       }
-      
-      /* Mobile safe area */
       .pb-safe {
         padding-bottom: env(safe-area-inset-bottom);
       }
     </style>
 
-<link rel="stylesheet" href="/index.css">
   <script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "vite": "https://aistudiocdn.com/vite@^7.2.4",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
 }
 </script>
@@ -78,5 +91,6 @@
 </head>
   <body class="bg-rose-50 text-slate-800 antialiased">
     <div id="root"></div>
-</body>
+    <!-- Entry point for Vite -->
+  </body>
 </html>
