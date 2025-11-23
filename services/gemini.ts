@@ -1,6 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { LegalResponse, GroundingSource, MakeupRecommendation } from "../types";
 
+// Declare the global variable injected by Vite
+declare const __GEMINI_KEY__: string | undefined;
+
 // --- LAZY INITIALIZATION ---
 // We do not initialize the client at the top level to prevent crashes 
 // if the API key is missing during initial load.
@@ -8,11 +11,14 @@ let aiInstance: GoogleGenAI | null = null;
 
 const getAI = () => {
   if (!aiInstance) {
-    const apiKey = process.env.API_KEY;
+    // Read from the custom global defined in vite.config.ts
+    // We check type to be safe, though Vite defines it.
+    const apiKey = typeof __GEMINI_KEY__ !== 'undefined' ? __GEMINI_KEY__ : '';
+    
     if (!apiKey) {
       console.warn("API Key is missing! AI features will fail.");
     }
-    // Fallback to empty string to allow app to load, errors will occur on usage not startup
+    // Initialize with the key (or empty string to avoid startup crash)
     aiInstance = new GoogleGenAI({ apiKey: apiKey || '' });
   }
   return aiInstance;
