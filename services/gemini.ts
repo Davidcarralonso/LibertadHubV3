@@ -3,24 +3,33 @@ import { LegalResponse, GroundingSource, MakeupRecommendation } from "../types";
 
 // Declare the global variable injected by Vite
 declare const __GEMINI_KEY__: string | undefined;
+
 // --- LAZY INITIALIZATION ---
-// We do not initialize the client at the top level to prevent crashes 
-// if the API key is missing during initial load.
 let aiInstance: GoogleGenAI | null = null;
 
 const getAI = () => {
   if (!aiInstance) {
-    // Read from the custom global defined in vite.config.ts
-    // We check type to be safe, though Vite defines it.
     const apiKey = typeof __GEMINI_KEY__ !== 'undefined' ? __GEMINI_KEY__ : '';
-    
     if (!apiKey) {
       console.warn("API Key is missing! AI features will fail.");
     }
-    // Initialize with the key (or empty string to avoid startup crash)
     aiInstance = new GoogleGenAI({ apiKey: apiKey || '' });
   }
   return aiInstance;
+};
+
+// --- ERROR HELPER ---
+const handleGeminiError = (error: any): string => {
+  const msg = error?.message || error?.toString() || '';
+  console.error("Gemini API Error:", msg);
+  
+  if (msg.includes('403') || msg.includes('leaked') || msg.includes('PERMISSION_DENIED')) {
+    return "⛔ ALERTA DE SEGURIDAD: La API Key ha sido revocada por Google porque fue detectada como pública. Por favor, genera una nueva clave en Google AI Studio y actualiza los Secretos de GitHub.";
+  }
+  if (msg.includes('429') || msg.includes('quota')) {
+    return "⏳ Cuota excedida. Por favor espera un momento antes de intentarlo de nuevo.";
+  }
+  return "⚠️ Hubo un problema conectando con la inteligencia artificial. Inténtalo de nuevo.";
 };
 
 // --- WISHLIST SERVICE ---
@@ -58,7 +67,8 @@ export const getWishlistSuggestions = async (categoryLabel: string): Promise<str
 
   } catch (error) {
     console.error("Error generating suggestions:", error);
-    return ["Una cena romántica", "Un día de spa", "Flores silvestres"];
+    // Return a single item array with the error message so it appears in the UI suggestions list
+    return [handleGeminiError(error)];
   }
 };
 
@@ -66,14 +76,13 @@ export const getWishlistSuggestions = async (categoryLabel: string): Promise<str
 export const getLegalConsultation = async (query: string): Promise<LegalResponse> => {
   try {
     const ai = getAI();
-    // Using gemini-3-pro-preview for maximum reasoning capability for complex tasks like Law.
-    const model = 'gemini-3-pro-preview';
+    // Use gemini-2.5-flash instead of 3-pro-preview for stability on free keys if pro fails
+    const model = 'gemini-2.5-flash'; 
 
     const response = await ai.models.generateContent({
       model,
       contents: query,
       config: {
-        // Critical: Enable Google Search grounding to ensure facts are checked against real web sources/BOE.
         tools: [{ googleSearch: {} }],
         systemInstruction: `You are a Senior Spanish Law Tutor and Legal Expert assisting a law student. 
         Your goal is to explain concepts from the Spanish Civil Code, Penal Code, and Constitution with EXTREME rigor.
@@ -86,11 +95,10 @@ export const getLegalConsultation = async (query: string): Promise<LegalResponse
         5. If you are unsure or the law is ambiguous, explicitly state: "Existe debate doctrinal sobre esto..." or "Necesito verificar más fuentes".
         6. Structure your answer with Markdown: Use **Bold** for key terms and > Blockquotes for article text.
         `,
-        temperature: 0.3, // Low temperature for more deterministic, factual answers
+        temperature: 0.3, 
       }
     });
 
-    // Extract grounding metadata (Sources)
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const sources: GroundingSource[] = groundingChunks
       .map((chunk: any) => {
@@ -101,7 +109,6 @@ export const getLegalConsultation = async (query: string): Promise<LegalResponse
       })
       .filter((s: any) => s !== null) as GroundingSource[];
 
-    // Remove duplicates
     const uniqueSources = Array.from(new Set(sources.map(s => s.uri)))
       .map(uri => sources.find(s => s.uri === uri)!);
 
@@ -111,9 +118,8 @@ export const getLegalConsultation = async (query: string): Promise<LegalResponse
     };
 
   } catch (error) {
-    console.error("Error in legal consultation:", error);
     return {
-      text: "⚠️ Error de conexión con la base jurídica. Por favor, verifica tu conexión o inténtalo más tarde.",
+      text: handleGeminiError(error),
       sources: []
     };
   }
@@ -156,8 +162,14 @@ export const getMakeupRecommendations = async (hexColor: string): Promise<Makeup
     return JSON.parse(response.text || "[]") as MakeupRecommendation[];
 
   } catch (error) {
-    console.error("Error getting makeup recommendations:", error);
-    return [];
+    const errorMsg = handleGeminiError(error);
+    // Return a dummy error recommendation to display the message
+    return [{
+      category: "Error",
+      productName: "Error de Conexión",
+      reason: errorMsg,
+      hexColorEstimate: "#ff0000"
+    }];
   }
 };
 
@@ -172,7 +184,6 @@ export const analyzeMakeupImage = async (base64Image: string): Promise<{
     const ai = getAI();
     const model = 'gemini-2.5-flash';
     
-    // Remove data URL prefix if present to get pure base64
     const cleanBase64 = base64Image.split(',')[1] || base64Image;
 
     const response = await ai.models.generateContent({
@@ -222,8 +233,8 @@ export const analyzeMakeupImage = async (base64Image: string): Promise<{
   } catch (error) {
     console.error("Error analyzing makeup image:", error);
     return {
-      brand: "",
-      name: "",
+      brand: "Error API",
+      name: handleGeminiError(error).slice(0, 30) + "...", // Truncate for UI
       category: "face",
       paoMonths: 12
     };
